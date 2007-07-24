@@ -1,6 +1,7 @@
-== Synopsis
+= Rubyforge
 
-  rubyforge [options]* mode [mode_args]*
+* http://codeforpeople.rubyforge.org/rubyforge/
+* http://rubyforge.org/projects/codeforpeople/
 
 == Description
 
@@ -15,3 +16,8 @@ A script which automates a limited set of rubyforge operations.
   .rubyforge directory which expires after a time.  always run the
   login command before any operation that requires authentication,
   such as uploading a package.
+
+== Synopsis
+
+  rubyforge [options]* mode [mode_args]*
+
