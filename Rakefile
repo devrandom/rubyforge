@@ -17,7 +17,7 @@ Hoe.new("rubyforge", RubyForge::VERSION) do |p|
   p.author = ['Ara T Howard', 'Ryan Davis', 'Eric Hodel']
   p.need_tar = false
 
-  changes = p.paragraphs_of("History.txt", 1).first
+  changes = p.paragraphs_of("History.txt", 1..2).join("\n\n")
   summary, *description = p.paragraphs_of("README.txt", 3, 3..4)
 
   p.changes = changes
