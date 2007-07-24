@@ -26,7 +26,7 @@ end
 class RubyForge
 
   # :stopdoc:
-  VERSION     = "0.4.2"
+  VERSION     = '0.4.3'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"
@@ -56,7 +56,7 @@ class RubyForge
   end
 
   def setup
-    FileUtils::mkdir_p RUBYFORGE_D unless test ?d, RUBYFORGE_D
+    FileUtils::mkdir_p RUBYFORGE_D, :mode => 0700 unless test ?d, RUBYFORGE_D
     test ?e, CONFIG_F and FileUtils::mv CONFIG_F, "#{CONFIG_F}.bak"
     config = CONFIG[/\A.*(?=^\# AUTOCONFIG)/m]
     open(CONFIG_F, "w") { |f| f.write config }
@@ -99,7 +99,7 @@ class RubyForge
 
     unless data["group_ids"].has_key? project then
       html = URI.parse("http://rubyforge.org/projects/#{project}/index.html").read
-      group_id = html[/(frs|tracker)\/\?group_id=\d+/][/\d+/].to_i
+      group_id = html[/(frs|tracker|mail)\/\?group_id=\d+/][/\d+/].to_i
       data["group_ids"][project] = group_id
     end
 

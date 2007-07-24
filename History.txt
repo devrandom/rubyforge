@@ -1,5 +1,9 @@
 Version History:
 
+* 0.4.3 / 2007-07-23:
+  * Set mode on .rubyforge directory to 700.
+  * Fix fetching of user id when user has no releases.
+
 * 0.4.2 / 2007-05-21:
   * Fix for windoze users (spaces in path).
   * Added check for extant release.

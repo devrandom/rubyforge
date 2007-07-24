@@ -4,7 +4,7 @@
 
 == Description
 
-A simplistic script which automates a limited set of rubyforge operations 
+A script which automates a limited set of rubyforge operations.
 
 * Run 'rubyforge help' for complete usage.
 * Setup: For first time users AND upgrades to 0.4.0:
