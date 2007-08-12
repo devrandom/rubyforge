@@ -26,7 +26,7 @@ end
 class RubyForge
 
   # :stopdoc:
-  VERSION     = '0.4.3'
+  VERSION     = '0.4.4'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"
@@ -231,7 +231,7 @@ class RubyForge
     release_date ||= Time::now.strftime("%Y-%m-%d %H:%M")
 
     type_id ||= userfile.path[%r|\.[^\./]+$|]
-    type_id = lookup "type", type_id
+    type_id = (lookup "type", type_id rescue lookup "type", ".oth")
 
     processor_id ||= "Any"
     processor_id = lookup "processor", processor_id

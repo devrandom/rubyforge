@@ -1,5 +1,9 @@
 Version History:
 
+=== 0.4.4 / ??:
+
+* Default to "Other" if a file's type is unrecognized.
+
 === 0.4.3 / 2007-07-23:
 
 * Set mode on .rubyforge directory to 700.
