@@ -307,7 +307,7 @@ class RubyForge
     userfile = open userfile, 'rb'
 
     type_id ||= userfile.path[%r|\.[^\./]+$|]
-    type_id = lookup "type", type_id
+    type_id = (lookup "type", type_id rescue lookup "type", ".oth")
 
     processor_id ||= "Any"
     processor_id = lookup "processor", processor_id
