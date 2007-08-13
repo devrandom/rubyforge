@@ -2,7 +2,6 @@
 
 === 0.4.4 / 2007-08-13:
 
-* autoconfig now scrapes for processor and file type ids.
 * Default to "Other" if a file's type is unrecognized.
 
 === 0.4.3 / 2007-07-23:
