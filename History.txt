@@ -2,6 +2,8 @@
 
 === 0.4.4 / 2007-08-13:
 
+* New type_id values will merge with extant data. (self-repairing data is Good)
+* Scrape processor_ids, merging in with extant data.
 * Default to "Other" if a file's type is unrecognized.
 
 === 0.4.3 / 2007-07-23:
