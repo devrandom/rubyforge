@@ -35,8 +35,6 @@ class RubyForge
   # We must use __FILE__ instead of DATA because this is now a library
   # and DATA is relative to $0, not __FILE__.
   CONFIG = File.read(__FILE__).split(/__END__/).last.gsub(/#\{(.*)\}/) { eval $1 }
-
-  attr_reader :client if $TESTING
   # :startdoc:
 
   attr_reader :userconfig, :autoconfig
@@ -48,6 +46,9 @@ class RubyForge
     @autoconfig_path = File.join(dir, file.sub(/^user/, 'auto'))
     @autoconfig = test(?e, @autoconfig_path) ? YAML.load_file(@autoconfig_path) : YAML.load(CONFIG)["rubyforge"]
 
+    @autoconfig["type_ids"] = YAML.load(CONFIG)['rubyforge']['type_ids']
+
+    @client = nil
     @uri = URI.parse @userconfig['uri']
 
     raise "no <username>" unless @userconfig["username"]
@@ -74,13 +75,15 @@ class RubyForge
   def scrape_config
     username = @userconfig['username']
 
-    %w(group package release).each do |type|
+    %w(group package processor release).each do |type|
       @autoconfig["#{type}_ids"].clear
     end
 
     puts "Getting #{username}"
     html = URI.parse("http://rubyforge.org/users/#{username}/index.html").read
+
     projects = html.scan(%r%/projects/([^/]+)/%).flatten
+
     puts "Fetching #{projects.size} projects"
     projects.each do |project|
       next if project == "support"
@@ -92,6 +95,7 @@ class RubyForge
     data = {
       "group_ids" => {},
       "package_ids" => {},
+      "processor_ids" => Hash.new { |h,k| h[k] = {} },
       "release_ids" => Hash.new { |h,k| h[k] = {} },
     }
 
@@ -117,6 +121,21 @@ class RubyForge
       when /filemodule_id=(\d+)/ then
         data["package_ids"][package] = $1.to_i
       end
+    end
+
+    if not data['release_ids'][package].empty? and
+       @autoconfig['processor_ids'].empty? then
+      puts "Fetching processor ids"
+
+      login
+
+      html = client.get_content "http://rubyforge.org/frs/admin/qrs.php?package=&group_id=#{group_id}"
+
+      html =~ /<select name="processor_id">(.*?)<\/select>/m
+      processors = $1
+      processors.scan(/<option value="(\d{4})">([^<]+)/) do
+        data["processor_ids"][$2] = $1.to_i
+      end if processors
     end
 
     data.each do |key, val|
@@ -326,26 +345,30 @@ class RubyForge
     run page, form, 'content-type' => boundary
   end
 
-  def run(page, form, extheader={}) # :nodoc:
-    client = HTTPAccess2::Client::new ENV["HTTP_PROXY"]
-    client.debug_dev = STDERR if ENV["RUBYFORGE_DEBUG"] || ENV["DEBUG"] || $DEBUG
-    client.set_cookie_store @userconfig["cookie_jar"]
-    client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+  def client
+    return @client if @client
+
+    @client = HTTPAccess2::Client::new ENV["HTTP_PROXY"]
+    @client.debug_dev = STDERR if ENV["RUBYFORGE_DEBUG"] || ENV["DEBUG"] || $DEBUG
+    @client.set_cookie_store @userconfig["cookie_jar"]
+    @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
     # HACK to fix http-access2 redirect bug/feature
-    client.redirect_uri_callback = lambda do |res|
+    @client.redirect_uri_callback = lambda do |res|
       page = res.header['location'].first
       page =~ %r/http/ ? page : @uri + page
     end
 
+    @client
+  end
+
+  def run(page, form, extheader={}) # :nodoc:
     uri = @uri + page
     if $DEBUG then
       puts "client.post_content #{uri.inspect}, #{form.inspect}, #{extheader.inspect}"
     end
 
     response = client.post_content uri, form, extheader
-
-    @client = client if $TESTING
 
     client.save_cookie_store
 
@@ -436,16 +459,10 @@ __END__
       .gem         : 1400
       .pgp         : 8150
       .sig         : 8150
+      .pem         : 1500
+
   #
   # map processor names to rubyforge ids
   #
     processor_ids :
-      i386       : 1000
-      IA64       : 6000
-      Alpha      : 7000
-      Any        : 8000
-      PPC        : 2000
-      MIPS       : 3000
-      Sparc      : 4000
-      UltraSparc : 5000
       Other      : 9999

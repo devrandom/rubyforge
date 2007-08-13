@@ -27,6 +27,29 @@ class HTTPAccess2::Client
     @url, @form, @headers = url, form, headers
     FakeRubyForge::HTML
   end
+
+  def self.data
+    @data ||= []
+  end
+
+  alias old_get_content get_content
+
+  def get_content(*args)
+    self.class.data.shift or raise "no more data"
+  end
+
+end
+
+class URI::HTTP
+
+  def self.data
+    @data ||= []
+  end
+
+  def read
+    self.class.data.shift or raise "no more data"
+  end
+
 end
 
 class TestRubyForge < Test::Unit::TestCase
@@ -238,6 +261,48 @@ class TestRubyForge < Test::Unit::TestCase
     assert_equal 'http://rubyforge.org/frs/admin/qrs.php', client.url.to_s
     assert_equal form, client.form
     assert_equal extheader, client.headers
+  end
+
+  def test_scrape_project
+    orig_stdout = $stdout
+    orig_stderr = $stderr
+    $stdout = StringIO.new
+    $stderr = StringIO.new
+    util_new RubyForge
+    @rubyforge.autoconfig.each { |k,v| v.clear }
+
+    URI::HTTP.data << "<a href='/tracker/?group_id=1513'>Tracker</a>"
+    URI::HTTP.data << <<-EOF
+<h3>ar_mailer
+<a href="/frs/monitor.php?filemodule_id=4566&group_id=1513&start=1">
+<a href="shownotes.php?release_id=13368">1.3.1</a>
+<a href="shownotes.php?release_id=12185">1.2.0</a></strong>
+    EOF
+
+    HTTPAccess2::Client.data << <<-EOF
+<select name="processor_id">
+<option value="100">Must Choose One</option>
+<option value="1000">i386</option>
+<option value="1001">i387</option>
+</select>
+    EOF
+
+    @rubyforge.scrape_project('my_project')
+
+    expected = {
+      "group_ids" => { "my_project" => 1513 },
+      "package_ids" => { "ar_mailer" => 4566 },
+      "processor_ids" => { "i386" => 1000, "i387" => 1001 },
+      "release_ids" => {
+        "ar_mailer" => { "1.2.0" => 12185, "1.3.1" => 13368 }
+      },
+      "type_ids" => {},
+    }
+
+    assert_equal expected, @rubyforge.autoconfig
+  ensure
+    $stdout = orig_stdout
+    $stderr = orig_stderr
   end
 
   def util_new(klass)
