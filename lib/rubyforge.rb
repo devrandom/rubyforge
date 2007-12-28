@@ -26,7 +26,7 @@ end
 class RubyForge
 
   # :stopdoc:
-  VERSION     = '0.4.4'
+  VERSION     = '0.4.5'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"

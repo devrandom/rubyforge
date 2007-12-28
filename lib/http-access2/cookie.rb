@@ -51,8 +51,7 @@ class WebAgent
   class Cookie
     include CookieUtils
 
-    require 'parsedate'
-    include ParseDate
+    require 'time'
 
     attr_accessor :name, :value
     attr_accessor :domain, :path
@@ -182,7 +181,7 @@ class WebAgent
 	  @domain = value
 	when 'expires'
 	  begin
-	    @expires = Time.gm(*parsedate(value)[0,6])
+      @expires = Time.parse(value).gmtime
 	  rescue ArgumentError
 	    @expires = nil
 	  end

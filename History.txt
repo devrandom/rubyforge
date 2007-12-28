@@ -1,5 +1,9 @@
 == Version History:
 
+=== 0.4.5 / ??:
+
+* Update for Ruby 1.9.0.
+
 === 0.4.4 / 2007-08-13:
 
 * New type_id values will merge with extant data. (self-repairing data is Good)

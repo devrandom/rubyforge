@@ -235,14 +235,14 @@ class Client
   #   Get a_sring of message-body of response.
   #
   def get_content(uri, query = nil, extheader = {}, &block)
-    retry_connect(uri, query) do |uri, query|
-      get(uri, query, extheader, &block)
+    retry_connect(uri, query) do |_uri, _query|
+      get(_uri, _query, extheader, &block)
     end
   end
 
   def post_content(uri, body = nil, extheader = {}, &block)
-    retry_connect(uri, nil) do |uri, query|
-      post(uri, body, extheader, &block)
+    retry_connect(uri, nil) do |_uri, query|
+      post(_uri, body, extheader, &block)
     end
   end
 
@@ -435,9 +435,9 @@ private
     @debug_dev << "\n\n= Response\n\n" if @debug_dev
     do_get_header(req, res, sess)
     conn.push(res)
-    sess.get_data() do |str|
-      block.call(str) if block
-      content << str
+    sess.get_data() do |s|
+      block.call(s) if block
+      content << s
     end
     @session_manager.keep(sess) unless sess.closed?
   end
@@ -455,8 +455,8 @@ private
     @debug_dev << "\n\n= Response\n\n" if @debug_dev
     do_get_header(req, res, sess)
     conn.push(res)
-    sess.get_data() do |str|
-      pipew.syswrite(str)
+    sess.get_data() do |s|
+      pipew.syswrite(s)
     end
     pipew.close
     @session_manager.keep(sess) unless sess.closed?
