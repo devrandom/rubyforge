@@ -4,6 +4,7 @@
 
 * Update for Ruby 1.9.0.
 * Updated History, Rakefile, and Readme for new hoe abilities.
+* Added config backup/restore rake tasks (for testing).
 
 === 0.4.4 / 2007-08-13:
 
