@@ -11,18 +11,27 @@ end
 Object.send :remove_const, :RubyForge if defined? RubyForge
 require './lib/rubyforge.rb'
 
-Hoe.new("rubyforge", RubyForge::VERSION) do |p|
-  p.rubyforge_name = "codeforpeople"
-  p.url = "http://rubyforge.org/projects/codeforpeople"
-  p.author = ['Ara T Howard', 'Ryan Davis', 'Eric Hodel']
-  p.need_tar = false
+Hoe.new("rubyforge", RubyForge::VERSION) do |rubyforge|
+  rubyforge.rubyforge_name = "codeforpeople"
+  rubyforge.need_tar = false
 
-  changes = p.paragraphs_of("History.txt", 1..2).join("\n\n")
-  summary, *description = p.paragraphs_of("README.txt", 3, 3..4)
+  rubyforge.developer('Ryan Davis', 'ryand-ruby@zenspider.com')
+  rubyforge.developer('Eric Hodel', 'drbrain@segment7.net')
+  rubyforge.developer('Ara T Howard', 'ara.t.howard@gmail.com')
+end
 
-  p.changes = changes
-  p.summary = summary
-  p.description = description.join("\n\n")
+task :backup do
+  Dir.chdir File.expand_path("~/.rubyforge") do
+    cp "user-config.yml",  "user-config.yml.bak"
+    cp "auto-config.yml",  "auto-config.yml.bak"
+  end
+end
+
+task :restore do
+  Dir.chdir File.expand_path("~/.rubyforge") do
+    cp "user-config.yml.bak",  "user-config.yml"
+    cp "auto-config.yml.bak",  "auto-config.yml"
+  end
 end
 
 # vim:syntax=ruby

@@ -181,7 +181,7 @@ class WebAgent
 	  @domain = value
 	when 'expires'
 	  begin
-      @expires = Time.parse(value).gmtime
+	    @expires = Time.parse(value).gmtime
 	  rescue ArgumentError
 	    @expires = nil
 	  end
