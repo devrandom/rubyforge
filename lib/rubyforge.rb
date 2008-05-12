@@ -2,26 +2,11 @@
 
 require 'enumerator'
 require 'fileutils'
-require 'http-access2'
 require 'yaml'
 require 'open-uri'
+require 'rubyforge/client'
 
 $TESTING = false unless defined? $TESTING
-
-# HACK to fix http-access2 cookie selection bug
-class WebAgent  # :nodoc: all
-  module CookieUtils
-    alias :old_domain_match :domain_match
-    def domain_match(host, domain)
-      case domain
-      when /^\./
-        return tail_match?(host, domain) # was (domain, host)
-      else
-        return old_domain_match(host, domain)
-      end
-    end
-  end
-end
 
 class RubyForge
 
@@ -34,33 +19,58 @@ class RubyForge
 
   # We must use __FILE__ instead of DATA because this is now a library
   # and DATA is relative to $0, not __FILE__.
-  CONFIG = File.read(__FILE__).split(/__END__/).last.gsub(/#\{(.*)\}/) { eval $1 }
+  config = File.read(__FILE__).split(/__END__/).last.gsub(/#\{(.*)\}/) {eval $1}
+  CONFIG = YAML.load(config)
   # :startdoc:
 
   attr_reader :userconfig, :autoconfig
 
-  def initialize(userconfig=CONFIG_F, opts={})
-    @userconfig = test(?e, userconfig) ? IO::read(userconfig) : CONFIG
-    @userconfig = YAML.load(@userconfig).merge(opts)
-    dir, file = File.split(userconfig)
-    @autoconfig_path = File.join(dir, file.sub(/^user/, 'auto'))
-    @autoconfig = test(?e, @autoconfig_path) ? YAML.load_file(@autoconfig_path) : YAML.load(CONFIG)["rubyforge"]
+  def initialize(userconfig=nil, autoconfig=nil, opts=nil)
+    # def initialize(userconfig=CONFIG_F, opts={})
+    @userconfig, @autoconfig = userconfig, autoconfig
 
-    @autoconfig["type_ids"] = YAML.load(CONFIG)['rubyforge']['type_ids']
+    @autoconfig ||= CONFIG["rubyforge"].dup
+    @userconfig.merge! opts if opts
 
     @client = nil
-    @uri = URI.parse @userconfig['uri']
+    @uri = nil
+  end
 
-    raise "no <username>" unless @userconfig["username"]
-    raise "no <password>" unless @userconfig["password"]
+  def configure opts = {}
+    user_path        = CONFIG_F
+    dir, file        = File.split(user_path)
+
+    @userconfig      = if test(?e, user_path) then
+                         YAML.load_file(user_path)
+                       else
+                         CONFIG
+                       end.merge(opts)
+    @autoconfig_path = File.join(dir, file.sub(/^user/, 'auto'))
+    @autoconfig      = if test(?e, @autoconfig_path) then
+                         YAML.load_file(@autoconfig_path)
+                       else
+                         CONFIG["rubyforge"].dup
+                       end
+    @autoconfig["type_ids"] = CONFIG['rubyforge']['type_ids'].dup
+
+    raise "no <username>"   unless @userconfig["username"]
+    raise "no <password>"   unless @userconfig["password"]
     raise "no <cookie_jar>" unless @userconfig["cookie_jar"]
+  end
+
+  def uri
+    @uri ||= URI.parse @userconfig['uri']
   end
 
   def setup
     FileUtils::mkdir_p RUBYFORGE_D, :mode => 0700 unless test ?d, RUBYFORGE_D
     test ?e, CONFIG_F and FileUtils::mv CONFIG_F, "#{CONFIG_F}.bak"
-    config = CONFIG[/\A.*(?=^\# AUTOCONFIG)/m]
-    open(CONFIG_F, "w") { |f| f.write config }
+    config = CONFIG.dup
+    config.delete "rubyforge"
+
+    open(CONFIG_F, "w") { |f|
+      f.write YAML.dump(config)
+    }
     FileUtils::touch COOKIE_F
     edit = (ENV["EDITOR"] || ENV["EDIT"] || "vi") + " '#{CONFIG_F}'"
     system edit or puts "edit '#{CONFIG_F}'"
@@ -146,7 +156,7 @@ class RubyForge
   end
 
   def login
-    page = @uri + "/account/login.php"
+    page = self.uri + "/account/login.php"
     page.scheme = 'https'
     page = URI.parse page.to_s # set SSL port correctly
 
@@ -348,22 +358,15 @@ class RubyForge
   def client
     return @client if @client
 
-    @client = HTTPAccess2::Client::new ENV["HTTP_PROXY"]
+    @client = RubyForge::Client::new ENV["HTTP_PROXY"]
     @client.debug_dev = STDERR if ENV["RUBYFORGE_DEBUG"] || ENV["DEBUG"] || $DEBUG
-    @client.set_cookie_store @userconfig["cookie_jar"]
-    @client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-    # HACK to fix http-access2 redirect bug/feature
-    @client.redirect_uri_callback = lambda do |res|
-      page = res.header['location'].first
-      page =~ %r/http/ ? page : @uri + page
-    end
+    @client.cookie_store = @userconfig["cookie_jar"]
 
     @client
   end
 
   def run(page, form, extheader={}) # :nodoc:
-    uri = @uri + page
+    uri = self.uri + page
     if $DEBUG then
       puts "client.post_content #{uri.inspect}, #{form.inspect}, #{extheader.inspect}"
     end

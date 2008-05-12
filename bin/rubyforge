@@ -136,21 +136,21 @@ EOL
 mode = ARGV.shift
 
 opts = GetoptLong::new(
-         [ "--help"            , "-h" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--config"          , "-c" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--username"        , "-u" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--password"        , "-p" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--cookie_jar"      , "-C" , GetoptLong::REQUIRED_ARGUMENT ] ,
+         [ "--help"            , "-h" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--username"        , "-u" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--password"        , "-p" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--cookie_jar"      , "-C" , GetoptLong::REQUIRED_ARGUMENT ],
          [ "--is_private"      , "-P" , GetoptLong::REQUIRED_ARGUMENT ],
-         [ "--release_date"    , "-r" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--type_id"         , "-t" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--processor_id"    , "-o" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--release_notes"   , "-n" , GetoptLong::REQUIRED_ARGUMENT ] ,
-         [ "--release_changes" , "-a" , GetoptLong::REQUIRED_ARGUMENT ] ,
+         [ "--release_date"    , "-r" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--type_id"         , "-t" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--processor_id"    , "-o" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--release_notes"   , "-n" , GetoptLong::REQUIRED_ARGUMENT ],
+         [ "--release_changes" , "-a" , GetoptLong::REQUIRED_ARGUMENT ],
          [ "--preformatted"    , "-f" , GetoptLong::NO_ARGUMENT ]
-       ).enum_for.inject({}){|h,kv| h.update kv.first.delete('-') => kv.last}
+       ).enum_for.inject({}) { |h, (k, v)| h.update k.delete('-') => v }
 
-rubyforge = RubyForge.new(opts["config"] || RubyForge::CONFIG_F, opts)
+rubyforge = RubyForge.new
+rubyforge.configure opts
 
 mode = "help" if opts["help"]
 

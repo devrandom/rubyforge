@@ -9,7 +9,10 @@ rescue LoadError
 end
 
 Object.send :remove_const, :RubyForge if defined? RubyForge
-require './lib/rubyforge.rb'
+
+$LOAD_PATH << "./lib"
+
+require './lib/rubyforge'
 
 Hoe.new("rubyforge", RubyForge::VERSION) do |rubyforge|
   rubyforge.rubyforge_name = "codeforpeople"
