@@ -348,9 +348,9 @@ class TestRubyForge < Test::Unit::TestCase
 
     @rubyforge.client = RubyForge::FakeClient.new
 
-    @rubyforge.userconfig["release_date"] = "today"
-    @rubyforge.autoconfig["type_ids"][".rb"] = 9999
-    @rubyforge.autoconfig["group_ids"]["seattlerb"] = 42
+    @rubyforge.userconfig["release_date"]            = "today"
+    @rubyforge.autoconfig["type_ids"][".rb"]         = 9999
+    @rubyforge.autoconfig["group_ids"]["seattlerb"]  = 42
     @rubyforge.autoconfig["package_ids"]["woot_pkg"] = 666
   end
 

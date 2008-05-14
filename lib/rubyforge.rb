@@ -257,7 +257,7 @@ class RubyForge
     release_changes = @userconfig["release_changes"]
     preformatted    = @userconfig["preformatted"]
 
-    release_date ||= Time::now.strftime("%Y-%m-%d %H:%M")
+    release_date ||= Time.now.strftime("%Y-%m-%d %H:%M")
 
     type_id ||= userfile.path[%r|\.[^\./]+$|]
     type_id = (lookup "type", type_id rescue lookup "type", ".oth")

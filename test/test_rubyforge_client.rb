@@ -1,52 +1,56 @@
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 require 'rubyforge'
 
-class TestRubyForgeClient < Test::Unit::TestCase
-  def setup
-    RubyForge::Client.const_set(:Net, Module.new)
-    RubyForge::Client::Net.const_set(:HTTP, Class.new(DelegateClass(::Net::HTTP)))
-
-    RubyForge::Client::Net.class_eval do
-      def self.const_missing(sym)
-        ::Net.const_get(sym)
-      end
-    end
-
-    RubyForge::Client::Net::HTTP.class_eval do
-      def initialize(*args)
-        @http = ::Net::HTTP.new(*args)
-        super(@http)
-      end
-
-      class << self; attr_accessor :t_request, :t_data; end
-      def request(request, data)
-        self.class.instance_variable_set(:@t_request, request)
-        self.class.instance_variable_set(:@t_data, data)
-        response = Net::HTTPOK.new('1.1', 200, '')
-        class << response
-          def read_body; ''; end
-        end
-        return response
-      end
-
-      def self.const_missing(sym)
-        ::Net::HTTP.const_get(sym)
-      end
-    end
-
-    @client = RubyForge::Client.new
+class RubyForge::FakeAgent
+  class << self
+    attr_accessor :t_data, :t_request
   end
 
-  def teardown
-    RubyForge::Client.class_eval { remove_const(:Net) }
+  def initialize(*args)
+  end
+
+  def request(request, data)
+    self.class.t_request = request
+    self.class.t_data = data
+    response = Net::HTTPOK.new('1.1', 200, '')
+    def response.read_body; ''; end
+    return response
+  end
+
+  class Post
+    def initialize(*args)
+      @args = args
+      @stuff = {}
+    end
+
+    def [] key
+      @stuff[key.downcase]
+    end
+
+    def []= key, val
+      @stuff[key.downcase] = val
+    end
+
+    def method_missing(*stuff)
+      # warn stuff.inspect
+    end
+  end
+end
+
+class TestRubyForgeClient < Test::Unit::TestCase
+  def setup
+    @client                        = RubyForge::Client.new
+    @client.agent_class            = RubyForge::FakeAgent
+    RubyForge::FakeAgent.t_data    = :unassigned
+    RubyForge::FakeAgent.t_request = :unassigned
   end
 
   def test_post_with_params
     @client.post_content('http://example.com', { :f => 'adsf'})
-    assert_equal('f=adsf', RubyForge::Client::Net::HTTP.t_data)
+    assert_equal('f=adsf', RubyForge::FakeAgent.t_data)
 
     @client.post_content('http://example.com', { :a => 'b', :c => 'd' })
-    assert_equal('a=b&c=d', RubyForge::Client::Net::HTTP.t_data)
+    assert_equal('a=b&c=d', RubyForge::FakeAgent.t_data)
   end
 
   def test_multipart_post_one_param
@@ -64,7 +68,7 @@ END
                           { :a => 'b' },
                           { 'content-type' => boundary }
                         )
-    assert_equal(request, RubyForge::Client::Net::HTTP.t_data)
+    assert_equal(request, RubyForge::FakeAgent.t_data)
   end
 
   def test_multipart_post_two_params
@@ -85,7 +89,7 @@ END
                           { :a => 'b', :c => 'd' },
                           { 'content-type' => boundary }
                         )
-    assert_equal(request, RubyForge::Client::Net::HTTP.t_data)
+    assert_equal(request, RubyForge::FakeAgent.t_data)
   end
 
   def test_multipart_io
@@ -113,6 +117,6 @@ END
                           { :userfile => file },
                           { 'content-type' => boundary }
                         )
-    assert_equal(request, RubyForge::Client::Net::HTTP.t_data)
+    assert_equal(request, RubyForge::FakeAgent.t_data)
   end
 end
