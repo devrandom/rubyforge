@@ -55,7 +55,7 @@ class RubyForge
                      else
                        query_string_for(parameters)
                      end
-      request['Content-Length'] = request_data.length
+      request['Content-Length'] = request_data.length.to_s
 
       response = http.request(request, request_data)
       (response.get_fields('Set-Cookie')||[]).each do |raw_cookie|
@@ -83,7 +83,7 @@ class RubyForge
     end
 
     def boundary_data_for(boundary, parameters)
-      parameters.map { |k,v|
+      parameters.sort_by {|k,v| k.to_s }.map { |k,v|
         parameter = "--#{boundary}\r\nContent-Disposition: form-data; name=\"" +
             WEBrick::HTTPUtils.escape_form(k.to_s) + "\""
 
@@ -105,7 +105,7 @@ class RubyForge
     end
 
     def query_string_for(parameters)
-      parameters.map { |k,v|
+      parameters.sort_by {|k,v| k.to_s }.map { |k,v|
         k && [  WEBrick::HTTPUtils.escape_form(k.to_s),
                 WEBrick::HTTPUtils.escape_form(v.to_s) ].join('=')
       }.compact.join('&')
