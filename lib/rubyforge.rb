@@ -11,7 +11,7 @@ $TESTING = false unless defined? $TESTING
 class RubyForge
 
   # :stopdoc:
-  VERSION     = '0.4.5'
+  VERSION     = '0.5.0'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"
