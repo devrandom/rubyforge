@@ -21,6 +21,9 @@ Hoe.new("rubyforge", RubyForge::VERSION) do |rubyforge|
   rubyforge.developer('Ryan Davis', 'ryand-ruby@zenspider.com')
   rubyforge.developer('Eric Hodel', 'drbrain@segment7.net')
   rubyforge.developer('Ara T Howard', 'ara.t.howard@gmail.com')
+
+
+  rubyforge.multiruby_skip << "rubinius"
 end
 
 task :backup do
