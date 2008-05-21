@@ -56,6 +56,8 @@ class RubyForge
     raise "no <username>"   unless @userconfig["username"]
     raise "no <password>"   unless @userconfig["password"]
     raise "no <cookie_jar>" unless @userconfig["cookie_jar"]
+
+    self
   end
 
   def uri
