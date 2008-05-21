@@ -2,7 +2,7 @@ class RubyForge
   class CookieManager
     class << self
       def load(path)
-        cm = YAML.load_file(path) || CookieManager.new(path)
+        cm = YAML.load_file(path) rescue CookieManager.new(path)
         cm = CookieManager.new(path) unless cm.is_a?(CookieManager)
         cm.clean_stale_cookies
       end
