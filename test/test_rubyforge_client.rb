@@ -46,8 +46,8 @@ class TestRubyForgeClient < Test::Unit::TestCase
   end
 
   def test_post_with_params
-    @client.post_content('http://example.com', { :f => 'adsf'})
-    assert_equal('f=adsf', RubyForge::FakeAgent.t_data)
+    @client.post_content('http://example.com', { :f => 'adsf aoeu'})
+    assert_equal('f=adsf+aoeu', RubyForge::FakeAgent.t_data)
 
     @client.post_content('http://example.com', { :a => 'b', :c => 'd' })
     assert_equal('a=b&c=d', RubyForge::FakeAgent.t_data)
@@ -57,18 +57,18 @@ class TestRubyForgeClient < Test::Unit::TestCase
     random = Array::new(8){ "%2.2d" % rand(42) }.join('__')
     boundary = "multipart/form-data; boundary=___#{ random }___"
 
-    request = <<-END
+    expected = <<-END
 --___#{random}___\r
 Content-Disposition: form-data; name="a"\r\n\r
-b\r
+a b c\r
 --___#{random}___--\r
 END
 
     @client.post_content( 'http://example.com',
-                          { :a => 'b' },
+                          { :a => 'a b c' },
                           { 'content-type' => boundary }
                         )
-    assert_equal(request, RubyForge::FakeAgent.t_data)
+    assert_equal(expected, RubyForge::FakeAgent.t_data)
   end
 
   def test_multipart_post_two_params

@@ -103,17 +103,17 @@ class RubyForge
         parameter = "--#{boundary}\r\nContent-Disposition: form-data; name=\"" +
             WEBrick::HTTPUtils.escape_form(k.to_s) + "\""
 
-        if v.respond_to?(:path)
+        if v.respond_to? :path
           parameter += "; filename=\"#{File.basename(v.path)}\"\r\n"
           parameter += "Content-Transfer-Encoding: binary\r\n"
           parameter += "Content-Type: text/plain"
         end
         parameter += "\r\n\r\n"
 
-        if v.respond_to?(:path)
+        if v.respond_to? :path
           parameter += v.read
         else
-          parameter += WEBrick::HTTPUtils.escape_form(v.to_s)
+          parameter += v.to_s
         end
 
         parameter

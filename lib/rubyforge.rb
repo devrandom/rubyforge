@@ -267,9 +267,11 @@ class RubyForge
     processor_id ||= "Any"
     processor_id = lookup "processor", processor_id
 
-    release_notes = IO::read(release_notes) if release_notes and test(?e, release_notes)
+    release_notes = IO::read(release_notes) if
+      test(?e, release_notes) if release_notes
 
-    release_changes = IO::read(release_changes) if release_changes and test(?e, release_changes)
+    release_changes = IO::read(release_changes) if
+      test(?e, release_changes) if release_changes
 
     preformatted = preformatted ? 1 : 0
 
