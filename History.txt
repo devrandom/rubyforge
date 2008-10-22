@@ -1,5 +1,10 @@
 == Version History:
 
+=== 1.0.1 / 2008-10-22:
+
+* Fixed multipart form upload so it isn't url escaping the data. DOH.
+  * Affects release_notes and release_changes, but never reported for 5 months.
+
 === 1.0.0 / 2008-05-20:
 
 * Removed HTTPAccess2, thanks to Aaron Patterson. Even tho he's whiny.
