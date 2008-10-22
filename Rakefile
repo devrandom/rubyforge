@@ -8,7 +8,10 @@ rescue LoadError
        please install it via rubygems."
 end
 
-Object.send :remove_const, :RubyForge if defined? RubyForge
+$".reject! { |s| s =~ /rubyforge/ }
+
+RubyForge.send :remove_const, :Client rescue nil
+Object.send :remove_const, :RubyForge rescue nil
 
 $LOAD_PATH << "./lib"
 
@@ -21,7 +24,6 @@ Hoe.new("rubyforge", RubyForge::VERSION) do |rubyforge|
   rubyforge.developer('Ryan Davis', 'ryand-ruby@zenspider.com')
   rubyforge.developer('Eric Hodel', 'drbrain@segment7.net')
   rubyforge.developer('Ara T Howard', 'ara.t.howard@gmail.com')
-
 
   rubyforge.multiruby_skip << "rubinius"
 end
