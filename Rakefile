@@ -8,13 +8,13 @@ rescue LoadError
        please install it via rubygems."
 end
 
+# remove possibly old version:
 $".reject! { |s| s =~ /rubyforge/ }
-
 RubyForge.send :remove_const, :Client rescue nil
 Object.send :remove_const, :RubyForge rescue nil
 
+# load current version
 $LOAD_PATH << "./lib"
-
 require './lib/rubyforge'
 
 Hoe.new("rubyforge", RubyForge::VERSION) do |rubyforge|
