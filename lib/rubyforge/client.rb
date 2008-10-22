@@ -14,7 +14,7 @@ class Time
       old_utc(*args)
     end
   end
-end
+end unless Time.respond_to? :old_utc
 
 # clean up "using default DH parameters" warning for https
 class Net::HTTP
@@ -23,7 +23,7 @@ class Net::HTTP
     self.old_use_ssl = flag
     @ssl_context.tmp_dh_callback = proc {}
   end
-end
+end unless Net::HTTP.public_instance_methods.include? "old_use_ssl="
 
 class RubyForge
   class Client
