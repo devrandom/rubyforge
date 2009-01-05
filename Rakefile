@@ -8,6 +8,8 @@ rescue LoadError
        please install it via rubygems."
 end
 
+$:.unshift 'lib'
+
 abort "you _must_ install this gem to release it" if
   ENV['VERSION'] && ENV['VERSION'] != RubyForge::VERSION
 
