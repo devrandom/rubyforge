@@ -63,7 +63,7 @@ class RubyForge
 
       @cookie_manager[uri].each { |k,v|
         request['Cookie'] = v.to_s
-      } unless @cookie_manager[uri]
+      } if @cookie_manager[uri]
 
       http = agent_class.new( uri.host, uri.port )
 
