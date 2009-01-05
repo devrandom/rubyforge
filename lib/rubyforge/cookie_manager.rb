@@ -1,3 +1,5 @@
+require 'yaml'
+
 class RubyForge
   class CookieManager
     class << self
@@ -19,7 +21,13 @@ class RubyForge
     def [](uri)
       # FIXME we need to do more matching on hostname....  This is not
       # bulletproof
-      @jar[uri.host.downcase]
+      uri = (URI === uri ? uri.host : uri).downcase 
+      @jar[uri] ||= {}
+    end
+
+    def clear uri
+      self[uri].clear
+      self.save!
     end
 
     def empty?
@@ -27,6 +35,7 @@ class RubyForge
     end
 
     def save!
+      clean_stale_cookies
       File.open(@cookies_file, 'wb') { |f|
         f.write(YAML.dump(self))
       }

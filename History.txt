@@ -1,5 +1,12 @@
 == Version History:
 
+=== 1.0.2 / 2009-01-05:
+
+* All webby commands now login automatically.
+* Login now no-ops if it already has a session cookie.
+* Added logout command.
+* Much more of the config is self-repairing, but still not bulletproof yet.
+
 === 1.0.1 / 2008-10-22:
 
 * Fixed multipart form upload so it isn't url escaping the data. DOH.

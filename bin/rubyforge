@@ -172,50 +172,60 @@ when %r/names/
   puts "packages: #{rf["package_ids"].keys.sort.join(", ")}"
 when %r/login/
   rubyforge.login
+when %r/logout/
+  rubyforge.logout
 when %r/create_package/
   page, msg = "/frs/admin/index.php", "post_content"
 
   group_id, package_name = ARGV
 
-  abort "no <group_id>" unless group_id
+  abort "no <group_id>"     unless group_id
   abort "no <package_name>" unless package_name
 
   group_id = Integer(group_id) rescue group_id
+
+  rubyforge.login
 
   rubyforge.create_package group_id, package_name
 when %r/delete_package/
   group_id, package_id = ARGV
 
-  abort "no <group_id>" unless group_id
+  abort "no <group_id>"   unless group_id
   abort "no <package_id>" unless package_id
 
-  group_id = Integer(group_id) rescue group_id
+  group_id   = Integer(group_id)   rescue group_id
   package_id = Integer(package_id) rescue package_id
+
+  rubyforge.login
 
   rubyforge.delete_package group_id, package_id
 when %r/add_release/
   group_id, package_id, release_name, userfile = ARGV
 
-  abort "no <group_id>" unless group_id
-  abort "no <package_id>" unless package_id
+  abort "no <group_id>"     unless group_id
+  abort "no <package_id>"   unless package_id
   abort "no <release_name>" unless release_name
-  abort "no <userfile>" unless userfile
+  abort "no <userfile>"     unless userfile
 
-  group_id = Integer(group_id) rescue group_id
+  group_id   = Integer(group_id)   rescue group_id
   package_id = Integer(package_id) rescue package_id
+
+  rubyforge.login
 
   rubyforge.add_release group_id, package_id, release_name, userfile
 when %r/add_file/
   group_id, package_id, release_id, userfile = ARGV
 
-  abort "no <group_id>" unless group_id
+  abort "no <group_id>"   unless group_id
   abort "no <package_id>" unless package_id
   abort "no <release_id>" unless release_id
-  abort "no <userfile>" unless userfile
+  abort "no <userfile>"   unless userfile
 
-  group_id = Integer(group_id) rescue group_id
+  group_id   = Integer(group_id)   rescue group_id
   package_id = Integer(package_id) rescue package_id
   release_id = Integer(release_id) rescue release_id
+
+  rubyforge.login
 
   rubyforge.add_file group_id, package_id, release_id, userfile
 else

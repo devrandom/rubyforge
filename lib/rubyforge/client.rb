@@ -36,6 +36,10 @@ class RubyForge
       @agent_class     = Net::HTTP
     end
 
+    def cookie_store
+      @cookie_manager
+    end
+
     def cookie_store=(path)
       @cookie_manager = CookieManager.load(path)
     end
@@ -59,7 +63,7 @@ class RubyForge
 
       @cookie_manager[uri].each { |k,v|
         request['Cookie'] = v.to_s
-      }
+      } unless @cookie_manager[uri]
 
       http = agent_class.new( uri.host, uri.port )
 

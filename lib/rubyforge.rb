@@ -23,6 +23,7 @@ class RubyForge
   CONFIG = YAML.load(config)
   # :startdoc:
 
+  # TODO: add an autoconfig method that is self-repairing, removing key checks 
   attr_reader :userconfig, :autoconfig
 
   def initialize(userconfig=nil, autoconfig=nil, opts=nil)
@@ -60,6 +61,10 @@ class RubyForge
     self
   end
 
+  def cookie_store
+    client.cookie_store
+  end
+
   def uri
     @uri ||= URI.parse @userconfig['uri']
   end
@@ -88,7 +93,7 @@ class RubyForge
     username = @userconfig['username']
 
     %w(group package processor release).each do |type|
-      @autoconfig["#{type}_ids"].clear
+      @autoconfig["#{type}_ids"].clear if @autoconfig["#{type}_ids"]
     end
 
     puts "Getting #{username}"
@@ -105,10 +110,10 @@ class RubyForge
 
   def scrape_project(project)
     data = {
-      "group_ids" => {},
-      "package_ids" => {},
+      "group_ids"     => {},
+      "package_ids"   => {},
       "processor_ids" => Hash.new { |h,k| h[k] = {} },
-      "release_ids" => Hash.new { |h,k| h[k] = {} },
+      "release_ids"   => Hash.new { |h,k| h[k] = {} },
     }
 
     puts "Updating #{project}"
@@ -136,7 +141,8 @@ class RubyForge
     end
 
     if not data['release_ids'][package].empty? and
-       @autoconfig['processor_ids'].empty? then
+        (@autoconfig['processor_ids'].nil? or
+         @autoconfig['processor_ids'].empty?) then
       puts "Fetching processor ids"
 
       login
@@ -151,13 +157,20 @@ class RubyForge
     end
 
     data.each do |key, val|
+      @autoconfig[key] ||= {}
       @autoconfig[key].merge! val
     end
 
     save_autoconfig
   end
 
+  def logout
+    cookie_store.clear "rubyforge.org"
+  end
+
   def login
+    return if cookie_store['rubyforge.org']['session_ser'] rescue false
+
     page = self.uri + "/account/login.php"
     page.scheme = 'https'
     page = URI.parse page.to_s # set SSL port correctly
@@ -177,7 +190,7 @@ class RubyForge
     re = %r/personal\s+page\s+for:\s+#{ Regexp.escape username }/iom
     unless response =~ re
       warn("%s:%d: warning: potentially failed login using %s:%s" %
-        [__FILE__,__LINE__,username,password]) unless $TESTING
+           [__FILE__,__LINE__,username,password]) unless $TESTING
     end
 
     response
