@@ -11,7 +11,7 @@ $TESTING = false unless defined? $TESTING
 class RubyForge
 
   # :stopdoc:
-  VERSION     = '1.0.2'
+  VERSION     = '1.0.3'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"
@@ -189,8 +189,8 @@ class RubyForge
 
     re = %r/personal\s+page\s+for:\s+#{ Regexp.escape username }/iom
     unless response =~ re
-      warn("%s:%d: warning: potentially failed login using %s:%s" %
-           [__FILE__,__LINE__,username,password]) unless $TESTING
+      warn("%s:%d: warning: potentially failed login using %s" %
+           [__FILE__, __LINE__, username]) unless $TESTING
     end
 
     response
