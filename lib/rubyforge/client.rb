@@ -21,7 +21,7 @@ class Net::HTTP
   alias :old_use_ssl= :use_ssl=
   def use_ssl= flag
     self.old_use_ssl = flag
-    @ssl_context.tmp_dh_callback = proc {}
+    @ssl_context.tmp_dh_callback = proc {} if @ssl_context
   end
 end unless Net::HTTP.public_instance_methods.include? "old_use_ssl="
 
