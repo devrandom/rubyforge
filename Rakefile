@@ -1,5 +1,8 @@
 # -*- ruby -*-
 
+$:.unshift 'lib'
+require 'rubyforge'
+
 begin
   require 'hoe'
 rescue LoadError
@@ -7,8 +10,6 @@ rescue LoadError
        If you're trying to install the rubyforge library,
        please install it via rubygems."
 end
-
-$:.unshift 'lib'
 
 abort "you _must_ install this gem to release it" if
   ENV['VERSION'] && ENV['VERSION'] != RubyForge::VERSION
