@@ -1,5 +1,10 @@
 == Version History:
 
+=== 1.0.3 / 2009-02-26:
+
+* Fixed nil error in our Net::HTTP patches.
+* Removed password from warning if the login possibly failed.
+
 === 1.0.2 / 2009-01-05:
 
 * All webby commands now login automatically.
