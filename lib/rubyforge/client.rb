@@ -33,7 +33,14 @@ class RubyForge
       @debug_dev       = nil
       @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
       @cookie_manager  = CookieManager.new
-      @agent_class     = Net::HTTP
+      if proxy
+        begin
+          proxy_uri = URI.parse(proxy)
+          @agent_class = Net::HTTP::Proxy(proxy_uri.host,proxy_uri.port)
+        rescue URI::InvalidURIError
+        end
+      end
+      @agent_class ||= Net::HTTP
     end
 
     def cookie_store

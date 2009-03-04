@@ -1,5 +1,9 @@
 == Version History:
 
+=== 1.0.4 / ??:
+
+* Uses the passed in proxy, if provided. (Thanks sdabet, RF #24071)
+
 === 1.0.3 / 2009-02-26:
 
 * Fixed nil error in our Net::HTTP patches.

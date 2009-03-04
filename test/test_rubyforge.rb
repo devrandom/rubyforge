@@ -68,6 +68,16 @@ class TestRubyForge < Test::Unit::TestCase
     #     end
   end
 
+  def test_new_with_proxy_uses_a_proxy_class
+    client = RubyForge::Client.new('http://localhost:8808/')
+    assert client.agent_class.proxy_class?, 'agent class should be a proxy'
+  end
+
+  def test_new_with_bad_proxy_uses_normal_http
+    client = RubyForge::Client.new('asdfkjhalksdfjh')
+    assert !client.agent_class.proxy_class?, 'agent class should not be a proxy'
+  end
+
   def test_initialize_bad
     @cookie_path = File.join(Dir.tmpdir, "cookie.#{$$}.dat")
     File.open(@cookie_path, 'w') {} # touch
