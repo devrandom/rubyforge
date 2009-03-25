@@ -120,7 +120,8 @@ class RubyForge
 
     unless data["group_ids"].has_key? project then
       html = URI.parse("http://rubyforge.org/projects/#{project}/index.html").read
-      group_id = html[/(frs|tracker|mail)\/\?group_id=\d+/][/\d+/].to_i
+      group_id = html[%r/(memberlist.php|frs|tracker|mail)\/?\?group_id=\d+/][%r/\d+/].to_i
+
       data["group_ids"][project] = group_id
     end
 
