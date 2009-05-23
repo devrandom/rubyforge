@@ -188,7 +188,7 @@ class RubyForge
 
     response = run page, form
 
-    re = %r/personal\s+page\s+for:\s+#{ Regexp.escape username }/iom
+    re = %r/personal\s+page/iom
     unless response =~ re
       warn("%s:%d: warning: potentially failed login using %s" %
            [__FILE__, __LINE__, username]) unless $TESTING
