@@ -87,7 +87,6 @@ class RubyForge
                      end
       request['Content-Length'] = request_data.length.to_s
 
-#request_data = 'form_loginname=ahoward&form_pw=Zipper7en&login=Login'
       response = http.request(request, request_data)
       (response.get_fields('Set-Cookie') || []).each do |raw_cookie|
         WEBrick::Cookie.parse_set_cookies(raw_cookie).each { |baked_cookie|
@@ -97,13 +96,6 @@ class RubyForge
         }
       end
 
-#puts request
-#puts request_data
-#puts response.body
-#response.each_header do |key, val|
-        #p key => val
-#end
-#abort
       return response.body if response.class <= Net::HTTPSuccess
 
       if response.class <= Net::HTTPRedirection
