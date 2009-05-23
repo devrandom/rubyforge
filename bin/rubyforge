@@ -137,6 +137,7 @@ mode = ARGV.shift
 
 opts = GetoptLong::new(
          [ "--help"            , "-h" , GetoptLong::NO_ARGUMENT ],
+         [ "--force"           , "-F" , GetoptLong::NO_ARGUMENT ],
          [ "--username"        , "-u" , GetoptLong::REQUIRED_ARGUMENT ],
          [ "--password"        , "-p" , GetoptLong::REQUIRED_ARGUMENT ],
          [ "--cookie_jar"      , "-C" , GetoptLong::REQUIRED_ARGUMENT ],

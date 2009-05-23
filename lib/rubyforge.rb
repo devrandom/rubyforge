@@ -61,6 +61,10 @@ class RubyForge
     self
   end
 
+  def force
+    @userconfig['force']
+  end
+
   def cookie_store
     client.cookie_store
   end
@@ -170,7 +174,7 @@ class RubyForge
   end
 
   def login
-    return if cookie_store['rubyforge.org']['session_ser'] rescue false
+    return if(!force and cookie_store['rubyforge.org']['session_ser']) rescue false
 
     page = self.uri + "/account/login.php"
     page.scheme = 'https'
