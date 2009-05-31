@@ -341,8 +341,8 @@ class RubyForge
   # package_id, and release_id
   #
   # example :
-  #   add_file("codeforpeople.com", "traits", "0.8.0", "traits-0.8.0.gem")
-  #   add_file("codeforpeople.com", "traits", "0.8.0", "traits-0.8.0.tgz")
+  #   add_file("codeforpeople", "traits", "0.8.0", "traits-0.8.0.gem")
+  #   add_file("codeforpeople", "traits", "0.8.0", "traits-0.8.0.tgz")
   #   add_file(1024, 1242, "0.8.0", "traits-0.8.0.gem")
 
   def add_file(group_name, package_name, release_name, userfile)
@@ -441,7 +441,7 @@ __END__
   # map your group names to their rubyforge ids
   #
     group_ids :
-      codeforpeople.com : 1024
+      codeforpeople : 1024
   #
   # map your package names to their rubyforge ids
   #
