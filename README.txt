@@ -35,7 +35,7 @@ A script which automates a limited set of rubyforge operations.
 
 (The MIT License)
 
-Copyright (c) 2006-2009 Ryan Davis, Eric Hodel, Ara T Howard.
+Copyright (c) Ryan Davis, Eric Hodel, Ara T Howard.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
