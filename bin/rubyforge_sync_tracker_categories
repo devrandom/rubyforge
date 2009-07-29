@@ -1,0 +1,106 @@
+#!/usr/bin/ruby -w
+
+require 'rubygems'
+require 'mechanize'
+require 'rubyforge'
+require 'yaml'
+
+RF_URL      = "http://rubyforge.org"
+CONFIG_PATH = File.expand_path("~/.rubyforge/sync.yml")
+
+config = YAML.load(File.read(CONFIG_PATH)) rescue nil
+
+config ||= {
+  :skip      => [],
+  :additions => {}
+}
+
+skip      = config[:skip]
+additions = config[:additions]
+
+def mechanize
+  @mechanize ||= WWW::Mechanize.new
+end
+
+def rubyforge
+  unless defined? @rubyforge then
+    @rubyforge = RubyForge.new
+    @rubyforge.configure
+  end
+  @rubyforge
+end
+
+def login_to_rubyforge
+  m, login_url = mechanize, "/account/login.php"
+
+  m.get("#{RF_URL}#{login_url}").form_with(:action => login_url) do |f|
+    f.form_loginname = rubyforge.userconfig["username"]
+    f.form_pw        = rubyforge.userconfig["password"]
+  end.click_button
+end
+
+group_ids = rubyforge.autoconfig["group_ids"]
+admin_url = "tracker/admin/index.php"
+
+unless ARGV.empty? then
+  group_ids.delete_if { |name, _| ! ARGV.include? name }
+end
+
+group_ids.delete_if do |name, _|
+  skip.include? name
+end
+
+login_to_rubyforge
+
+group_ids.sort.each do |project_name, group_id|
+  puts project_name
+
+  releases = mechanize.get "#{RF_URL}/frs/admin/?group_id=#{group_id}"
+  releases = releases.forms_with(:action => "/frs/admin/index.php").map { |form|
+    form.package_name[/\S+/]
+  }.compact.sort
+
+  # next if releases.size < 2
+
+  trackers = {}
+  page = mechanize.get "#{RF_URL}/#{admin_url}?group_id=#{group_id}"
+  page.links_with(:href => /tracker.admin.*atid=/).each do |link|
+    trackers[link.text.sub(/ \302\240/, '')] = link.href[/atid=(\d+)/, 1].to_i
+  end
+
+  trackers.each do |tracker_name, atid|
+    puts "#{project_name}/#{tracker_name}"
+    url = "#{RF_URL}/#{admin_url}?group_id=#{group_id}&atid=#{atid}&add_cat=1"
+    page = mechanize.get url
+    form = page.form_with(:action => /tracker.admin/)
+
+    cats = page.links_with(:href => /tracker.admin.*update_cat/).map { |link|
+      link.text
+    }.sort
+
+    releases.reject! { |name| name =~ /certificates/i }
+    cats.reject!     { |name| name =~ /certificates/i }
+
+    releases += additions[project_name] if additions[project_name]
+    releases += ["other"]
+    releases.uniq!
+
+    missings = releases - cats
+    extras   = cats - releases
+
+    unless extras.empty? then
+      puts "You must manually resolve the second list:"
+      p missings
+      p extras
+      system "open '#{url}'"
+    else
+      unless missings.empty? then
+        missings.each do |missing|
+          puts "#{project_name}/#{tracker_name}/#{missing} Added"
+          form["name"] = missing
+          form.click_button
+        end
+      end
+    end
+  end
+end
