@@ -136,6 +136,8 @@ class RubyForge
     package = nil
     html.scan(/<h3>[^<]+|release_id=\d+">[^>]+|filemodule_id=\d+/).each do |s|
       case s
+      when /<h3>Gem namespace ownership/ then
+        break
       when /<h3>([^<]+)/ then
         package = $1.strip
       when /release_id=(\d+)">([^<]+)/ then
