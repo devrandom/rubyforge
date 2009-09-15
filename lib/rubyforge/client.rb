@@ -5,12 +5,12 @@ require 'rubyforge/cookie_manager'
 
 # clean up warnings caused by web servers that send down 2 digit years
 class Time
+  CENTURY = Time.now.year / 100 * 100
+
   class << self
     alias :old_utc :utc
-
     def utc(*args)
-      century = Time.now.year / 100 * 100
-      args[0] += century if args[0] < 100
+      args[0] += CENTURY if args[0] < 100 if args.length < 10
       old_utc(*args)
     end
   end
