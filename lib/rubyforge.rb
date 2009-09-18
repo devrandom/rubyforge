@@ -38,6 +38,10 @@ class RubyForge
     @client = nil
     @uri = nil
   end
+  
+  # These are no-ops now, but we'll keep them here for backwards compatibility
+  def login ; end
+  def logout ; end
 
   def configure opts = {}
     user_path        = CONFIG_F
