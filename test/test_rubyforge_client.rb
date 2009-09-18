@@ -46,77 +46,12 @@ class TestRubyForgeClient < Test::Unit::TestCase
   end
 
   def test_post_with_params
-    @client.post_content('http://example.com', { :f => 'adsf aoeu'})
+    @client.post_content('http://example.com', { :f => 'adsf aoeu'}, {}, {"username" => "tom", "password" => "secret"})
     assert_equal('f=adsf+aoeu', RubyForge::FakeAgent.t_data)
 
-    @client.post_content('http://example.com', { :a => 'b', :c => 'd' })
+    @client.post_content('http://example.com', { :a => 'b', :c => 'd' }, {}, {"username" => "tom", "password" => "secret"})
     assert_equal('a=b&c=d', RubyForge::FakeAgent.t_data)
   end
 
-  def test_multipart_post_one_param
-    random = Array::new(8){ "%2.2d" % rand(42) }.join('__')
-    boundary = "multipart/form-data; boundary=___#{ random }___"
 
-    expected = <<-END
---___#{random}___\r
-Content-Disposition: form-data; name="a"\r\n\r
-a b c\r
---___#{random}___--\r
-END
-
-    @client.post_content( 'http://example.com',
-                          { :a => 'a b c' },
-                          { 'content-type' => boundary }
-                        )
-    assert_equal(expected, RubyForge::FakeAgent.t_data)
-  end
-
-  def test_multipart_post_two_params
-    random = Array::new(8){ "%2.2d" % rand(42) }.join('__')
-    boundary = "multipart/form-data; boundary=___#{ random }___"
-
-    request = <<-END
---___#{random}___\r
-Content-Disposition: form-data; name="a"\r\n\r
-b\r
---___#{random}___\r
-Content-Disposition: form-data; name="c"\r\n\r
-d\r
---___#{random}___--\r
-END
-
-    @client.post_content( 'http://example.com',
-                          { :a => 'b', :c => 'd' },
-                          { 'content-type' => boundary }
-                        )
-    assert_equal(request, RubyForge::FakeAgent.t_data)
-  end
-
-  def test_multipart_io
-    random = Array::new(8){ "%2.2d" % rand(42) }.join('__')
-    boundary = "multipart/form-data; boundary=___#{ random }___"
-
-    file_contents = 'blah blah blah'
-    file = StringIO.new(file_contents)
-    class << file
-      def path
-        '/one/two/three.rb'
-      end
-    end
-
-    request = <<-END
---___#{random}___\r
-Content-Disposition: form-data; name="userfile"; filename="three.rb"\r
-Content-Transfer-Encoding: binary\r
-Content-Type: text/plain\r\n\r
-#{file_contents}\r
---___#{random}___--\r
-END
-
-    @client.post_content( 'http://example.com',
-                          { :userfile => file },
-                          { 'content-type' => boundary }
-                        )
-    assert_equal(request, RubyForge::FakeAgent.t_data)
-  end
 end

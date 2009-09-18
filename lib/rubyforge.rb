@@ -1,5 +1,6 @@
 #! /usr/bin/env ruby -w
 
+require 'json'
 require 'enumerator'
 require 'fileutils'
 require 'yaml'
@@ -8,14 +9,15 @@ require 'rubyforge/client'
 
 $TESTING = false unless defined? $TESTING
 
+$DEBUG=false
+
 class RubyForge
 
   # :stopdoc:
-  VERSION     = '1.0.5'
+  VERSION     = '1.1.0'
   HOME        = ENV["HOME"] || ENV["HOMEPATH"] || File::expand_path("~")
   RUBYFORGE_D = File::join HOME, ".rubyforge"
   CONFIG_F    = File::join RUBYFORGE_D, "user-config.yml"
-  COOKIE_F    = File::join RUBYFORGE_D, "cookie.dat"
 
   # We must use __FILE__ instead of DATA because this is now a library
   # and DATA is relative to $0, not __FILE__.
@@ -56,17 +58,12 @@ class RubyForge
 
     raise "no <username>"   unless @userconfig["username"]
     raise "no <password>"   unless @userconfig["password"]
-    raise "no <cookie_jar>" unless @userconfig["cookie_jar"]
 
     self
   end
 
   def force
     @userconfig['force']
-  end
-
-  def cookie_store
-    client.cookie_store
   end
 
   def uri
@@ -82,7 +79,6 @@ class RubyForge
     open(CONFIG_F, "w") { |f|
       f.write YAML.dump(config)
     }
-    FileUtils::touch COOKIE_F
     edit = (ENV["EDITOR"] || ENV["EDIT"] || "vi") + " '#{CONFIG_F}'"
     system edit or puts "edit '#{CONFIG_F}'"
   end
@@ -99,17 +95,20 @@ class RubyForge
     %w(group package processor release).each do |type|
       @autoconfig["#{type}_ids"].clear if @autoconfig["#{type}_ids"]
     end
+  
+    json = get_via_rest_api "/users/#{username}/groups.js"
 
-    puts "Getting #{username}"
-    html = URI.parse("http://rubyforge.org/users/#{username}/index.html").read
-
-    projects = html.scan(%r%/projects/([^/]+)/%).flatten
-
+    projects = json.collect {|group| group['group']['unix_group_name'] }
     puts "Fetching #{projects.size} projects"
     projects.each do |project|
-      next if project == "support"
       scrape_project(project)
     end
+  end
+  
+  def get_via_rest_api(path)
+    url = "#{@userconfig['uri']}#{path}"
+    puts "Hitting REST API: #{url}" if $DEBUG
+    JSON.parse(client.get_content(url, {}, {}, @userconfig))
   end
 
   def scrape_project(project)
@@ -120,47 +119,30 @@ class RubyForge
       "release_ids"   => Hash.new { |h,k| h[k] = {} },
     }
 
-    puts "Updating #{project}"
-
     unless data["group_ids"].has_key? project then
-      html = URI.parse("http://rubyforge.org/projects/#{project}/index.html").read
-      group_id = html[%r/(memberlist.php|frs|tracker|mail)\/?\?group_id=\d+/][%r/\d+/].to_i
-
+      json = get_via_rest_api "/groups/#{project}.js"
+      group_id = json["group"]["group_id"].to_i
       data["group_ids"][project] = group_id
     end
 
-    group_id = data["group_ids"][project]
-
-    html = URI.parse("http://rubyforge.org/frs/?group_id=#{group_id}").read
-
-    package = nil
-    html.scan(/<h3>[^<]+|release_id=\d+">[^>]+|filemodule_id=\d+/).each do |s|
-      case s
-      when /<h3>Gem namespace ownership/ then
-        break
-      when /<h3>([^<]+)/ then
-        package = $1.strip
-      when /release_id=(\d+)">([^<]+)/ then
-        data["release_ids"][package][$2] = $1.to_i
-      when /filemodule_id=(\d+)/ then
-        data["package_ids"][package] = $1.to_i
+    # Get project's packages 
+    json = get_via_rest_api "/groups/#{project}/packages.js"
+    json.each do |package|
+      data["package_ids"][package["package"]["name"]] = package["package"]["package_id"]
+      # Get releases for this package
+      json = get_via_rest_api "/packages/#{package["package"]["package_id"]}/releases.js"
+      json.each do |release|
+        data["release_ids"][package["package"]["name"]][release["name"]] = release["release_id"]
       end
     end
 
-    if not data['release_ids'][package].empty? and
-        (@autoconfig['processor_ids'].nil? or
-         @autoconfig['processor_ids'].empty?) then
-      puts "Fetching processor ids"
-
-      login
-
-      html = client.get_content "http://rubyforge.org/frs/admin/qrs.php?package=&group_id=#{group_id}"
-
-      html =~ /<select name="processor_id">(.*?)<\/select>/m
-      processors = $1
-      processors.scan(/<option value="(\d{4})">([^<]+)/) do
-        data["processor_ids"][$2] = $1.to_i
-      end if processors
+    # Get processor ids
+    if @autoconfig['processor_ids'].nil? || @autoconfig['processor_ids'].empty?
+      puts "Fetching processor ids" if $DEBUG
+      json = get_via_rest_api "/processors.js"
+      json.each do |processor|
+        data["processor_ids"][processor["processor"]["name"]] = processor["processor"]["processor_id"]
+      end
     end
 
     data.each do |key, val|
@@ -171,51 +153,16 @@ class RubyForge
     save_autoconfig
   end
 
-  def logout
-    cookie_store.clear "rubyforge.org"
-  end
-
-  def login
-    return if(!force and cookie_store['rubyforge.org']['session_ser']) rescue false
-
-    page = self.uri + "/account/login.php"
-    page.scheme = 'https'
-    page = URI.parse page.to_s # set SSL port correctly
-
-    username = @userconfig["username"]
-    password = @userconfig["password"]
-
-    form = {
-      "return_to"      => "",
-      "form_loginname" => username,
-      "form_pw"        => password,
-      "login"          => "Login"
-    }
-
-    response = run page, form
-
-    re = %r/personal\s+page/iom
-    unless response =~ re
-      warn("%s:%d: warning: potentially failed login using %s" %
-           [__FILE__, __LINE__, username]) unless $TESTING
-    end
-
-    response
-  end
-
   def create_package(group_id, package_name)
-    page = "/frs/admin/index.php"
+    page = "/groups/#{group_id}/packages"
 
     group_id = lookup "group", group_id
     is_private = @userconfig["is_private"]
     is_public = is_private ? 0 : 1
 
     form = {
-      "func"         => "add_package",
-      "group_id"     => group_id,
-      "package_name" => package_name,
-      "is_public"    => is_public,
-      "submit"       => "Create This Package",
+      "package[name]" => package_name,
+      "package[is_public]"    => is_public
     }
 
     run page, form
@@ -228,102 +175,61 @@ class RubyForge
   # Posts news item to +group_id+ (can be name) with +subject+ and +body+
 
   def post_news(group_id, subject, body)
-    page = "/news/submit.php"
-    group_id = lookup "group", group_id
-
+    # TODO - what was the post_changes parameter for?
     form = {
-      "group_id"     => group_id,
-      "post_changes" => "y",
-      "summary"      => subject,
-      "details"      => body,
-      "submit"       => "Submit",
+      "news_byte[summary]"      => subject,
+      "news_byte[details]"      => body
     }
-
-    run page, form
+    group_id = lookup "group", group_id
+    url = "/groups/#{group_id}/news_bytes"
+    run url, form
   end
 
   def delete_package(group_id, package_id)
-    page = "/frs/admin/index.php"
-
     group_id = lookup "group", group_id
     package_id = lookup "package", package_id
-
-    form = {
-      "func"        => "delete_package",
-      "group_id"    => group_id,
-      "package_id"  => package_id,
-      "sure"        => "1",
-      "really_sure" => "1",
-      "submit"      => "Delete",
-    }
-
     package_name = @autoconfig["package_ids"].invert[package_id]
     @autoconfig["package_ids"].delete package_name
     @autoconfig["release_ids"].delete package_name
     save_autoconfig
-
-    run page, form
+    url = "/packages/#{package_id}"
+    run url, {"_method" => "delete"}
   end
 
   def add_release(group_id, package_id, release_name, *files)
-    userfile = files.shift
-    page = "/frs/admin/qrs.php"
-
     group_id        = lookup "group", group_id
     package_id      = lookup "package", package_id
-    userfile        = open userfile, 'rb'
     release_date    = @userconfig["release_date"]
-    type_id         = @userconfig["type_id"]
-    processor_id    = @userconfig["processor_id"]
     release_notes   = @userconfig["release_notes"]
     release_changes = @userconfig["release_changes"]
     preformatted    = @userconfig["preformatted"]
-
     release_date ||= Time.now.strftime("%Y-%m-%d %H:%M")
-
-    type_id ||= userfile.path[%r|\.[^\./]+$|]
-    type_id = (lookup "type", type_id rescue lookup "type", ".oth")
-
-    processor_id ||= "Any"
-    processor_id = lookup "processor", processor_id
-
     release_notes = IO::read(release_notes) if
       test(?e, release_notes) if release_notes
-
     release_changes = IO::read(release_changes) if
       test(?e, release_changes) if release_changes
-
     preformatted = preformatted ? 1 : 0
 
     form = {
-      "group_id"        => group_id,
-      "package_id"      => package_id,
-      "release_name"    => release_name,
-      "release_date"    => release_date,
-      "type_id"         => type_id,
-      "processor_id"    => processor_id,
-      "release_notes"   => release_notes,
-      "release_changes" => release_changes,
-      "preformatted"    => preformatted,
-      "userfile"        => userfile,
-      "submit"          => "Release File"
+        "release[name]"    => release_name,
+        "release[release_date]"     => release_date,
+        "release[notes]"   => release_notes,
+        "release[changes]" => release_changes,
+        "release[preformatted]"    => preformatted,
     }
 
-    boundary = Array::new(8){ "%2.2d" % rand(42) }.join('__')
-    boundary = "multipart/form-data; boundary=___#{ boundary }___"
-
-    html = run(page, form, 'content-type' => boundary)
-    raise "Invalid package_id #{package_id}" if html[/Invalid package_id/]
-    raise "You have already released this version." if html[/That filename already exists in this project/]
-
-    release_id = html[/release_id=\d+/][/\d+/].to_i rescue nil
-
+    url = "/packages/#{package_id}/releases"
+    json = run url, form
+    
+    release_id = JSON.parse(json)["release_id"].to_i rescue nil
     unless release_id then
-      puts html if $DEBUG
-      raise "Couldn't get release_id, upload failed\?"
+      puts json if $DEBUG
+      raise "Couldn't get release_id, upload failed?"
     end
 
-    puts "RELEASE ID = #{release_id}" if $DEBUG
+    # FIXME
+    #raise "Invalid package_id #{package_id}" if html[/Invalid package_id/]
+    #raise "You have already released this version." if html[/That filename already exists in this project/]
 
     files.each do |file|
       add_file(group_id, package_id, release_id, file)
@@ -348,35 +254,29 @@ class RubyForge
   #   add_file(1024, 1242, "0.8.0", "traits-0.8.0.gem")
 
   def add_file(group_name, package_name, release_name, userfile)
-    page         = '/frs/admin/editrelease.php'
     type_id      = @userconfig["type_id"]
     group_id     = lookup "group", group_name
     package_id   = lookup "package", package_name
     release_id   = (Integer === release_name) ? release_name : lookup("release", package_name)[release_name]
-    processor_id = @userconfig["processor_id"]
-
-    page = "/frs/admin/editrelease.php?group_id=#{group_id}&release_id=#{release_id}&package_id=#{package_id}"
+    url = "/releases/#{release_id}/files.js"
 
     userfile = open userfile, 'rb'
 
     type_id ||= userfile.path[%r|\.[^\./]+$|]
     type_id = (lookup "type", type_id rescue lookup "type", ".oth")
 
+    processor_id = @userconfig["processor_id"]
     processor_id ||= "Any"
     processor_id = lookup "processor", processor_id
 
     form = {
-      "step2"        => 1,
-      "type_id"      => type_id,
-      "processor_id" => processor_id,
-      "userfile"     => userfile,
-      "submit"       => "Add This File"
-      }
+      "file[filename]"      => File.basename(userfile.path),
+      "file[processor_id]"  => processor_id,
+      "file[type_id]"       => type_id,
+      "contents"            => userfile.read
+    }
 
-    boundary = Array::new(8){ "%2.2d" % rand(42) }.join('__')
-    boundary = "multipart/form-data; boundary=___#{ boundary }___"
-
-    run page, form, 'content-type' => boundary
+    run url, form
   end
 
   def client
@@ -384,29 +284,16 @@ class RubyForge
 
     @client = RubyForge::Client::new ENV["HTTP_PROXY"]
     @client.debug_dev = STDERR if ENV["RUBYFORGE_DEBUG"] || ENV["DEBUG"] || $DEBUG
-    @client.cookie_store = @userconfig["cookie_jar"]
 
     @client
   end
 
   def run(page, form, extheader={}) # :nodoc:
     uri = self.uri + page
-    if $DEBUG then
-      puts "client.post_content #{uri.inspect}, #{form.inspect}, #{extheader.inspect}"
-    end
-
-    response = client.post_content uri, form, extheader
-
-    client.save_cookie_store
-
-    if $DEBUG then
-      response.sub!(/\A.*end tabGenerator -->/m, '')
-      response.gsub!(/\t/, '  ')
-      response.gsub!(/\n{3,}/, "\n\n")
-      puts response
-    end
-
-    return response
+    puts "client.post_content #{uri.inspect}, #{form.inspect}, #{extheader.inspect}" if $DEBUG
+    response = client.post_content uri, form, extheader, @userconfig
+    puts response if $DEBUG
+    response
   end
 
   def lookup(type, val) # :nodoc:
@@ -423,11 +310,11 @@ __END__
 #
 # base rubyforge uri - store in #{ CONFIG_F }
 #
-  uri        : http://rubyforge.org
+  uri        : http://api.rubyforge.org
 #
 # this must be your username
 #
-  username   : username
+  username   : tom
 #
 # this must be your password
 #
@@ -435,7 +322,6 @@ __END__
 #
 # defaults for some values
 #
-  cookie_jar : #{ COOKIE_F }
   is_private : false
 # AUTOCONFIG:
   rubyforge :
@@ -444,6 +330,7 @@ __END__
   #
     group_ids :
       codeforpeople : 1024
+      support : 5
   #
   # map your package names to their rubyforge ids
   #

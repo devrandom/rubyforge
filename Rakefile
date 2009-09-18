@@ -2,6 +2,7 @@
 
 require 'rubygems'
 require 'hoe'
+require 'json'
 
 abort "you _must_ install this gem to release it" if
   ENV['VERSION'] && ENV['VERSION'] != RubyForge::VERSION
@@ -10,6 +11,7 @@ Hoe.spec "rubyforge" do
   developer 'Ryan Davis',   'ryand-ruby@zenspider.com'
   developer 'Eric Hodel',   'drbrain@segment7.net'
   developer 'Ara T Howard', 'ara.t.howard@gmail.com'
+  developer 'Tom Copeland', 'tom@infoether.com'
 
   multiruby_skip << "rubinius"
 

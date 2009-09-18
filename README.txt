@@ -13,10 +13,6 @@ A script which automates a limited set of rubyforge operations.
   * edit ~/.rubyforge/user-config.yml
   * rubyforge config
 * For all rubyforge upgrades, run 'rubyforge config' to ensure you have latest.
-* Don't forget to login!  logging in will store a cookie in your
-  .rubyforge directory which expires after a time.  always run the
-  login command before any operation that requires authentication,
-  such as uploading a package.
 
 == Synopsis
 
@@ -25,6 +21,7 @@ A script which automates a limited set of rubyforge operations.
 == REQUIREMENTS
 
 * hoe
+* json
 * rubygems
 
 == INSTALL

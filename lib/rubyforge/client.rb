@@ -1,16 +1,16 @@
 require 'webrick/cookie'
 require 'net/http'
 require 'net/https'
-require 'rubyforge/cookie_manager'
 
 # clean up warnings caused by web servers that send down 2 digit years
 class Time
   CENTURY = Time.now.year / 100 * 100
-
+  
   class << self
     alias :old_utc :utc
+
     def utc(*args)
-      args[0] += CENTURY if args[0] < 100 if args.length < 10
+      args[0] += CENTURY if args[0] < 100
       old_utc(*args)
     end
   end
@@ -32,7 +32,6 @@ class RubyForge
     def initialize(proxy = nil)
       @debug_dev       = nil
       @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
-      @cookie_manager  = CookieManager.new
       if proxy
         begin
           proxy_uri = URI.parse(proxy)
@@ -43,41 +42,31 @@ class RubyForge
       @agent_class ||= Net::HTTP
     end
 
-    def cookie_store
-      @cookie_manager
-    end
-
-    def cookie_store=(path)
-      @cookie_manager = CookieManager.load(path)
-    end
-
-    def post_content(uri, form = {}, headers = {})
+    def post_content(uri, form = {}, headers = {}, userconfig = nil)
       uri = URI.parse(uri) unless uri.is_a?(URI)
       request = agent_class::Post.new(uri.request_uri)
-      execute(request, uri, form, headers)
+      execute(request, uri, form, headers, userconfig)
     end
 
-    def get_content(uri, query = {}, headers = {})
+    def get_content(uri, query = {}, headers = {}, userconfig = nil)
       uri = URI.parse(uri) unless uri.is_a?(URI)
       request = agent_class::Get.new(uri.request_uri)
-      execute(request, uri, query, headers)
+      execute(request, uri, query, headers, userconfig)
     end
 
-    def execute(request, uri, parameters = {}, headers = {})
+    def execute(request, uri, parameters = {}, headers = {}, userconfig = nil)
       {
         'content-type' => 'application/x-www-form-urlencoded'
       }.merge(headers).each { |k,v| request[k] = v }
 
-      @cookie_manager[uri].each { |k,v|
-        request['Cookie'] = v.to_s
-      } if @cookie_manager[uri]
-
       http = agent_class.new( uri.host, uri.port )
 
-      if uri.scheme == 'https'
-        http.use_ssl      = true
-        http.verify_mode  = OpenSSL::SSL::VERIFY_NONE
+      if uri.scheme == 'https' && uri.host !~ /localhost/
+       http.use_ssl      = true
+       http.verify_mode  = OpenSSL::SSL::VERIFY_NONE
       end
+      
+      request.basic_auth(userconfig["username"], userconfig["password"])
 
       request_data = case request['Content-Type']
                      when /boundary=(.*)$/
@@ -88,13 +77,6 @@ class RubyForge
       request['Content-Length'] = request_data.length.to_s
 
       response = http.request(request, request_data)
-      (response.get_fields('Set-Cookie') || []).each do |raw_cookie|
-        WEBrick::Cookie.parse_set_cookies(raw_cookie).each { |baked_cookie|
-          baked_cookie.domain ||= url.host
-          baked_cookie.path   ||= url.path
-          @cookie_manager.add(uri, baked_cookie)
-        }
-      end
 
       return response.body if response.class <= Net::HTTPSuccess
 
@@ -138,8 +120,5 @@ class RubyForge
       }.compact.join('&')
     end
 
-    def save_cookie_store
-      @cookie_manager.save!
-    end
   end
 end
