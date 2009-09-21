@@ -1,4 +1,4 @@
-=== 1.1.0 / 2009-??-??
+=== 2.0.0 / 2009-09-21
 
 * Modified to use RubyForge REST API rather than scraping HTML.
 
