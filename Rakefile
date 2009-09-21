@@ -7,6 +7,8 @@ require 'json'
 abort "you _must_ install this gem to release it" if
   ENV['VERSION'] && ENV['VERSION'] != RubyForge::VERSION
 
+Hoe.plugin :email
+
 Hoe.spec "rubyforge" do
   developer 'Ryan Davis',   'ryand-ruby@zenspider.com'
   developer 'Eric Hodel',   'drbrain@segment7.net'
@@ -18,6 +20,8 @@ Hoe.spec "rubyforge" do
   self.rubyforge_name = "codeforpeople"
   self.need_tar       = false
 end
+
+task :postrelease => :announce
 
 task :backup do
   Dir.chdir File.expand_path("~/.rubyforge") do
