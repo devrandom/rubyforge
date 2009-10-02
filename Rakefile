@@ -9,14 +9,14 @@ abort "you _must_ install this gem to release it" if
 
 Hoe.plugin :email
 
-Hoe.spec "rubyforge" do
+Hoe.spec "rubyforge" do 
   developer 'Ryan Davis',   'ryand-ruby@zenspider.com'
   developer 'Eric Hodel',   'drbrain@segment7.net'
   developer 'Ara T Howard', 'ara.t.howard@gmail.com'
   developer 'Tom Copeland', 'tom@infoether.com'
 
   multiruby_skip << "rubinius"
-
+  extra_deps << ["json",">= 1.1.7"]
   self.rubyforge_name = "codeforpeople"
   self.need_tar       = false
 end

@@ -1,3 +1,7 @@
+=== 2.0.1 / 2009-10-02
+
+* Added missing dependency JSON gem to spec.
+
 === 2.0.0 / 2009-09-21
 
 * Modified to use RubyForge REST API rather than scraping HTML.
