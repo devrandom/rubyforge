@@ -1,6 +1,10 @@
+=== 2.0.2 / 2009-10-05
+
+* Switched JSON gem dependency over to json_pure.
+
 === 2.0.1 / 2009-10-02
 
-* Added missing dependency JSON gem to spec.
+* Added a missing dependency on JSON gem to the spec.
 
 === 2.0.0 / 2009-09-21
 

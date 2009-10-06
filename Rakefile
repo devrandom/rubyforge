@@ -16,7 +16,7 @@ Hoe.spec "rubyforge" do
   developer 'Tom Copeland', 'tom@infoether.com'
 
   multiruby_skip << "rubinius"
-  extra_deps << ["json",">= 1.1.7"]
+  extra_deps << ["json_pure",">= 1.1.7"]
   self.rubyforge_name = "codeforpeople"
   self.need_tar       = false
 end
