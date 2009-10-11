@@ -1,3 +1,8 @@
+=== 2.0.3 / 2009-10-11
+
+* Added check to ensure user-config contains 'api.rubyforge.org' (Ryan Davis)
+* Removed DEBUG global
+
 === 2.0.2 / 2009-10-05
 
 * Switched JSON gem dependency over to json_pure.
