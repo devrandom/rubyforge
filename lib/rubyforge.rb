@@ -9,8 +9,6 @@ require 'rubyforge/client'
 
 $TESTING = false unless defined? $TESTING
 
-$DEBUG=false
-
 class RubyForge
 
   # :stopdoc:
@@ -71,7 +69,12 @@ class RubyForge
   end
 
   def uri
-    @uri ||= URI.parse @userconfig['uri']
+    uri = @userconfig['uri']
+    abort "Using new REST api, but uri isn't api.rubyforge.org.
+run `rubyforge setup` and fix please" if
+      uri =~ /rubyforge.org/ and uri !~ /api.rubyforge.org/
+
+    @uri ||= URI.parse uri
   end
 
   def setup
@@ -110,7 +113,7 @@ class RubyForge
   end
   
   def get_via_rest_api(path)
-    url = "#{@userconfig['uri']}#{path}"
+    url = "#{self.uri}#{path}"
     puts "Hitting REST API: #{url}" if $DEBUG
     JSON.parse(client.get_content(url, {}, {}, @userconfig))
   end
